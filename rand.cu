@@ -6,13 +6,13 @@
 
 #define N 1024
 // Kernel definition
-__global__ void random_gpu(long* C,long* time,curandState*state)
+__global__ void random_gpu(double* C,long* time,curandState*state)
 {
 	long i = threadIdx.x;
 	long seed=(*time)*(i+1);//因为所有给定时间一定，所以我们只能通过对时间进行简单处理
 	int offset=0;//完全独立的序列，所以offset全部为零来节约时间
 	curand_init (seed,i,offset,&state[i]);//设置第i个随机序列
-	C[i]=curand(&state[i]);//获得第i个随机序列的随机值
+	C[i]=curand_uniform_double(&state[i]);//获得第i个随机序列的随机值
 }
 
 long getCurrentTime()  
@@ -31,12 +31,12 @@ long*getCurrentTimeForDev()
 }
 int main()
 {
-	size_t size = N * sizeof(float);
+	size_t size = N * sizeof(double);
 
-	long* C=new long[N];
+	double* C=new double[N];
 	long st=getCurrentTime();
 	curandState *state;
-	long *d_C;
+	double *d_C;
 	cudaMalloc(&state,sizeof(curandState)*N);//设立随机状态列
 	cudaMalloc(&d_C, size);
 	random_gpu<<<1,N>>>(d_C,getCurrentTimeForDev(),state);
@@ -46,7 +46,7 @@ int main()
 	cudaFree(d_C);
 	for(int i=0;i<10;i++)
 	{
-		printf("%ld ",C[i]);
+		printf("%f ",C[i]);
 	}
 	delete[] C;
 	printf("\n");
